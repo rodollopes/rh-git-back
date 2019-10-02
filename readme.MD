@@ -1,1 +1,1 @@
-# arquivo de leitura 
+# Aqui será descrito as funcionalidades que serão disponibilizadas pelo projeto.
