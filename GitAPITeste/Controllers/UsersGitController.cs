@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using GitAPITeste.Models;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Octokit;
 using System;
 using System.Collections.Generic;
@@ -11,71 +13,57 @@ namespace GitAPITeste.Controllers
     [ApiController]
     public class UsersGitController : ControllerBase
     {
-        [HttpGet("{name}")]
-        public async Task<ActionResult<string>> GetAsync(string name)
+        [HttpGet("{name}/{pagina}")]
+        public async Task<ActionResult<string>> GetAsync(string name, int pagina)
         {
-            // Paramentro = Nome App, Usuario Git ou Organização GIT
-            var app = new ProductHeaderValue("rodollopes");
-            // Autenticação basica, também pode ser feita via token, é a mais recomendada
-            var autenticacao = new Credentials("rodollopes", "R.l0p3s29", AuthenticationType.Basic);
-            // cria uma instancia de acesso a API
-            var cliente = new GitHubClient(app) { Credentials = autenticacao };            
-
             name = name.Replace(" ", "%20");
 
-            var dataInicio = new DateTimeOffset(new DateTime(2000, 1, 1));
-            var cidade = "";
+            // Paramentro = Nome App, Usuario Git ou Organização GIT
+            ProductHeaderValue app = new ProductHeaderValue("rodollopes");
+            // Autenticação basica, também pode ser feita via token, é a mais recomendada
+            Credentials autenticacao = new Credentials("rodollopes", "R.l0p3s29", AuthenticationType.Basic);
+            // cria uma instancia de acesso a API
+            GitHubClient cliente = new GitHubClient(app) { Credentials = autenticacao };            
 
-            var pesquisa = new SearchUsersRequest(name) {
-                    // Tipo de Conta do Git
-                //AccountType = AccountSearchType.User,
-                    // Filtra contas criadas a partir de uma data
-                    // Clsse DateRange possui os metodos para filtrar a data
-                    // Classe SearchQualifierOperator, possui os operadores que pode ser utilizados
-                //Created = new DateRange(dataInicio, SearchQualifierOperator.GreaterThanOrEqualTo),
-                    // Filtra contas que possuam ao menos X seguidores
-                    // Clsse Range possui os metodos para filtrar por seguidores
-                    // Classe SearchQualifierOperator, possui os operadores que pode ser utilizados
-                //Followers = new Range(0, SearchQualifierOperator.GreaterThanOrEqualTo),
-                    // Define por quais campos a pesquisa ira buscar, senão informar o parametro ele busca em todos
-                In = new UserInQualifier[] { UserInQualifier.Username },
-                    // Filtra Por linguagem
-                //Language = Language.CSharp,
-                    // Filtra Por Cidade
-                //Location = cidade,
-                    // Tipo de Ordenação do Resultado
-                Order = SortDirection.Descending,
-                    // Filtra por Numero de Repositórios
-                //Repositories = new Range(1000),
-                    // Classifica pelo Campo determinado
-                SortField = UsersSearchSort.Followers
-            };
+            // cria o parametro de pesquisa na API
+            SearchUsersRequest pesquisa = new SearchUsersRequest(name);
+            // passa os filtrs adicionas da pesquisa
+            pesquisa.AccountType = AccountSearchType.User;
+            // 0 - login ; 1 - email; 2 - nome completo
+            pesquisa.In = new UserInQualifier[] { UserInQualifier.Fullname };
+            pesquisa.Order = SortDirection.Descending;
+            pesquisa.SortField = UsersSearchSort.Followers;
+            //DateTimeOffset dataInicio = new DateTimeOffset(new DateTime(2000, 1, 1));
+            //pesquisa.Created = new DateRange(dataInicio, SearchQualifierOperator.GreaterThanOrEqualTo)
+            //pesquisa.Followers = new Range(0, SearchQualifierOperator.GreaterThanOrEqualTo)
+            //pesquisa.Language = Language.CSharp ()
+            //pesquisa.Location = String com o nome da cidade
+            //pesquisa.Repositories = new Range(1000)
+            
+            // Define quantos resultados quero que retorne por pagina
+            pesquisa.PerPage = 10;
+            pesquisa.Page = pagina;
 
-            var resultado = await cliente.Search.SearchUsers(pesquisa);
-            var dadosRetorno = "";
+            SearchUsersResult resultado = await cliente.Search.SearchUsers(pesquisa);
+            List<UsuarioModel> usuarios = new List<UsuarioModel>();
 
-            var paginas = resultado.TotalCount / resultado.Items.Count();
+            if (resultado.Items.Count() == 0) { return $"{{\"erro\":\"Nenhum registro encontrado\"}}"; }
 
-            if (resultado.TotalCount % resultado.Items.Count() != 0)
+            for (int j = 0; j < resultado.Items.Count(); j++)
             {
-                paginas++;
+                // faz a requisição para buscar todos os dados do usuário
+                User user = await cliente.User.Get(resultado.Items[j].Login);
+                // adiciona o usuario a lista a ser retornada
+                usuarios.Add(new UsuarioModel(resultado.Items[j].Login,
+                                                        user.Name,
+                                                        user.Email,
+                                                        user.Company,
+                                                        user.Location,
+                                                        user.Followers,
+                                                        user.AvatarUrl));
             }
 
-            for (int i = 1; i <= paginas; i++)
-            {
-                for (int j = 0; j < resultado.Items.Count(); j++)
-                {
-                    // faz a requisição para buscar todos os dados do usuário
-                    var user = await cliente.User.Get(resultado.Items[j].Login);
-                    if (dadosRetorno != "")
-                    {
-                        dadosRetorno += ",";
-                    }
-                    dadosRetorno += $"{{\"Login\": \"{resultado.Items[j].Login}\", \"Nome\": \"{user.Name}\", \"Empresa\": \"{user.Company}\", \"Cidade\": \"{user.Location}\", \"Seguidores\": \"{user.Followers}\"}}";
-                }
-            }
-
-            return "[" + dadosRetorno + "]";
+            return JsonConvert.SerializeObject(usuarios);
         }
     }
 }
