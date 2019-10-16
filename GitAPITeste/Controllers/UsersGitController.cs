@@ -15,15 +15,19 @@ namespace GitAPITeste.Controllers
     {
         [HttpPost]
         [Obsolete]
-        public async Task<ActionResult<string>> ExecutaPesquisa([FromBody] PesquisaModel filtrosPesquisa)
+        public async Task<ActionResult<string>> ExecutaPesquisa([FromForm] PesquisaModel filtrosPesquisa)
         {
             GitHubClient api = AutenticacaoUsuario();
+
+            if (filtrosPesquisa.TextoPesquisa == null)
+                return "Não informou o nome para a pesquisa!";
+
             SearchUsersRequest pesquisa = new SearchUsersRequest(filtrosPesquisa.TextoPesquisa);
 
             pesquisa.AccountType = filtrosPesquisa.TipoConta == 'U' ? AccountSearchType.User : AccountSearchType.Org;            
             pesquisa.Order = filtrosPesquisa.TipoOrdenacao == 'A' ? SortDirection.Ascending : SortDirection.Descending;
-            pesquisa.SortField = filtrosPesquisa.TipoOrdenacao == 'S' ? UsersSearchSort.Followers :
-                                 filtrosPesquisa.TipoOrdenacao == 'R' ? UsersSearchSort.Repositories :
+            pesquisa.SortField = filtrosPesquisa.OrdenarPor == 'S' ? UsersSearchSort.Followers :
+                                 filtrosPesquisa.OrdenarPor == 'R' ? UsersSearchSort.Repositories :
                                  UsersSearchSort.Joined;
             pesquisa.PerPage = filtrosPesquisa.ResultadosPorPagina;
             pesquisa.Page = filtrosPesquisa.Pagina == 0 ? 1 : filtrosPesquisa.Pagina;
@@ -31,36 +35,6 @@ namespace GitAPITeste.Controllers
             FiltrosAdicionaisPesquisa(ref pesquisa, filtrosPesquisa);
 
             return JsonConvert.SerializeObject(await ResultadoPesquisa(api, pesquisa));
-        }
-
-        [HttpGet("{name}/{pagina}")]
-        public async Task<ActionResult<string>> GetAsync(string name, int pagina)
-        {
-            name = name.Replace(" ", "%20");
-
-            // cria uma instancia de acesso a API
-            GitHubClient cliente = AutenticacaoUsuario();
-
-            // cria o parametro de pesquisa na API
-            SearchUsersRequest pesquisa = new SearchUsersRequest(name);
-            // passa os filtrs adicionas da pesquisa
-            pesquisa.AccountType = AccountSearchType.User;
-            // 0 - login ; 1 - email; 2 - nome completo
-            pesquisa.In = new UserInQualifier[] { UserInQualifier.Fullname };
-            pesquisa.Order = SortDirection.Descending;
-            pesquisa.SortField = UsersSearchSort.Followers;
-            //DateTimeOffset dataInicio = new DateTimeOffset(new DateTime(2000, 1, 1));
-            //pesquisa.Created = new DateRange(dataInicio, SearchQualifierOperator.GreaterThanOrEqualTo)
-            //pesquisa.Followers = new Range(0, SearchQualifierOperator.GreaterThanOrEqualTo)
-            //pesquisa.Language = Language.CSharp()
-            //pesquisa.Location = String com o nome da cidade
-            //pesquisa.Repositories = new Range(1000)
-            
-            // Define quantos resultados quero que retorne por pagina
-            pesquisa.PerPage = 10;
-            pesquisa.Page = pagina;
-
-            return JsonConvert.SerializeObject(await ResultadoPesquisa(cliente, pesquisa));
         }
 
         private async Task<List<UsuarioModel>> ResultadoPesquisa(GitHubClient api, SearchUsersRequest pesquisa)
@@ -112,7 +86,7 @@ namespace GitAPITeste.Controllers
         [Obsolete]
         private void FiltrosAdicionaisPesquisa (ref SearchUsersRequest pesquisa, PesquisaModel filtrosPesquisa)
         {
-            if (filtrosPesquisa.TipoPesquisa != ConstantesModel.STRING_INDEFINO) { pesquisa.In = TipoPesquisa(filtrosPesquisa.TipoPesquisa); }
+            if (filtrosPesquisa.TipoPesquisa != "T") { pesquisa.In = TipoPesquisa(filtrosPesquisa.TipoPesquisa); }
 
             if (filtrosPesquisa.DataInicio != null && filtrosPesquisa.DataFim != null)
             {
@@ -139,7 +113,7 @@ namespace GitAPITeste.Controllers
                 }
             }
 
-            if (filtrosPesquisa.Cidade != ConstantesModel.STRING_INDEFINO) { pesquisa.Location = filtrosPesquisa.Cidade; }
+            if (filtrosPesquisa.Cidade != null) { pesquisa.Location = filtrosPesquisa.Cidade; }
 
             //pesquisa.Repositories = new Range(1000)
         }

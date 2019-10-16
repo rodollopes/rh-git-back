@@ -8,21 +8,21 @@ namespace GitAPITeste.Models
 {
     public class PesquisaModel
     {
-        public string TextoPesquisa { get; }
+        public string TextoPesquisa { get; set; }
         // U - Usuário; E - Empresa
-        public char TipoConta { get; }
+        public char TipoConta { get; set; }
         // L - Login; E - Email; N - Nome
-        public string TipoPesquisa { get; }
+        public string TipoPesquisa { get; set; }
         // A - Ascendente; D - Descendente
-        public char TipoOrdenacao { get; }
+        public char TipoOrdenacao { get; set; }
         // S - Seguidores; R - Reposiorios; A - Ambos
-        public char OrdenarPor { get; }
-        public DateTime DataInicio { get; }
-        public DateTime DataFim { get; }
+        public char OrdenarPor { get; set; }
+        public DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
         // 1 - C#; 2 - Java; 3 - GO
-        public int Linguagem { get; }
-        public string Cidade { get; }
-        public int ResultadosPorPagina { get; }
-        public int Pagina { get; }
+        public int Linguagem { get; set; }
+        public string Cidade { get; set; }
+        public int ResultadosPorPagina { get; set; }
+        public int Pagina { get; set; }
     }
 }

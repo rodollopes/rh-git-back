@@ -9,10 +9,10 @@
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
-     "GitAPITeste": {
+    "GitAPITeste": {
       "commandName": "IISExpress",
-      "launchBrowser": true,
-      "launchUrl": "api/UsersGit/rodollopes/1"
+      "launchBrowser": false,
+      "launchUrl": ""
     }
   }
 }
