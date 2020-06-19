@@ -17,13 +17,6 @@ namespace GitAPITeste.Controllers
             return new string[] { "Hello World !!!", "Subimos nossa primeira API" };
         }
 
-        // GET api/values/5
-        //[HttpGet("{id}")]
-        //public ActionResult<string> Get(int id)
-        //{
-        //    return "value: " + id.ToString();
-        //}
-
         [HttpGet("{id}")]
         public ActionResult<string> Get(string id)
         {
